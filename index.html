@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>游戏记录 · 截图与攻略</title>
+<meta name="description" content="我玩过的游戏，截图和攻略都记在这里。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="hero">
+  <p class="hero__eyebrow">PLAY LOG</p>
+  <h1 class="hero__title">游戏记录</h1>
+  <p class="hero__sub">玩过的、卡住的、终于过了的，都记在这里</p>
+</header>
+
+<main>
+
+  <section class="list" aria-label="记录列表">
+
+    <!-- ===== 一条记录：复制这一整块 <a class="entry"> 即可新增一条 ===== -->
+    <a class="entry" href="posts/sample-01.html">
+      <div class="entry__thumb">
+        <img src="assets/images/cover-01.svg" alt="">
+      </div>
+      <div class="entry__body">
+        <div class="entry__meta">
+          <span class="entry__game">示例游戏</span>
+          <span class="entry__date">2026.10.14</span>
+        </div>
+        <h2 class="entry__title">开局到第一个 Boss，我死了十七次</h2>
+        <p class="entry__excerpt">写下这篇记录的时候天已经亮了。前半段还按着教程走，后半段基本靠自己摸索，这里把路线和几个关键点记下来。</p>
+        <span class="entry__more">阅读全文 →</span>
+      </div>
+    </a>
+    <!-- ===== 一条记录结束 ===== -->
+
+    <a class="entry" href="posts/sample-02.html">
+      <div class="entry__thumb">
+        <img src="assets/images/cover-02.svg" alt="">
+      </div>
+      <div class="entry__body">
+        <div class="entry__meta">
+          <span class="entry__game">示例游戏</span>
+          <span class="entry__date">2026.09.28</span>
+        </div>
+        <h2 class="entry__title">支线收集整理：三处容易漏掉的位置</h2>
+        <p class="entry__excerpt">主线通关之后回头扫支线，发现有三处如果不提前留意，基本会错过。配了截图，位置都标出来了。</p>
+        <span class="entry__more">阅读全文 →</span>
+      </div>
+    </a>
+
+  </section>
+
+</main>
+
+<footer class="footer">
+  <p>© <span id="year">2026</span> 游戏记录</p>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+
+</body>
+</html>

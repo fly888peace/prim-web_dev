@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1f2b2a"/>
+      <stop offset="50%" stop-color="#3e5c56"/>
+      <stop offset="100%" stop-color="#9aa88c"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#0b1211" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#0b1211" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#g1)"/>
+  <circle cx="300" cy="200" r="150" fill="#dff0e0" opacity="0.25"/>
+  <path d="M0 560 Q200 470 400 540 T800 520 T1280 545 L1280 720 L0 720 Z" fill="#16211f" opacity="0.92"/>
+  <path d="M0 640 Q260 590 520 640 T1040 620 T1280 650 L1280 720 L0 720 Z" fill="#0e1615"/>
+  <rect width="1280" height="300" y="420" fill="url(#g2)"/>
+  <text x="60" y="96" fill="#e8e2d6" opacity="0.45" font-family="Georgia, serif" font-size="22" letter-spacing="8">PLACEHOLDER 02</text>
+  <text x="60" y="660" fill="#e8e2d6" opacity="0.5" font-family="Georgia, serif" font-size="18" letter-spacing="4">换成你的截图就行</text>
+</svg>
