@@ -2,14 +2,20 @@
 
 记录自己玩过的游戏：截图 + 文字攻略。
 
-纯静态站点，没有构建步骤、没有依赖包、没有框架。`git clone` 下来起个静态服务就能访问。
+静态站点，没有框架。动画依赖 anime.js（npm 包，构建时由 Vite 解析并打包）。
 样式拆成 `css/` 下一组小文件，脚本拆成 `js/` 下一组 **ES 模块**，页面只引入口。
+
+`node_modules/` 和构建产物 `dist/` 都不进 Git：前者由 `npm install` 按 `package-lock.json` 重建，后者由 `npm run build` 现场生成。仓库里只有源码和依赖清单，不需要把几百兆的 `node_modules` 传上去。
 
 ## 目录结构
 
 ```
 web_dev/
 ├── index.html              首页：所有记录的列表
+├── package.json            依赖与脚本（vite / animejs）
+├── package-lock.json       锁定依赖版本，保证每台机器装出来都一样
+├── node_modules/           本地依赖，不入库，npm install 重建
+├── dist/                   构建产物，不入库，npm run build 生成
 ├── css/
 │   ├── variables.css       设计变量：配色、字体、缓动
 │   ├── reset.css           基础重置：盒模型、body 基线、图片、选区
@@ -38,14 +44,25 @@ web_dev/
 
 ## 本地预览
 
-**不能双击 `index.html` 打开。** ES 模块必须通过 http 协议加载，`file://` 会被浏览器拦下（控制台报 CORS，动画不生效）。
+先装依赖（只需一次；`node_modules` 不在仓库里，换台机器要重新装）：
+
+```bash
+npm install
+npm run dev
+```
+
+终端会给出一个 `http://localhost:5173` 之类的地址，浏览器打开即可。Vite 负责把 `motion.js` 里的 `import "animejs"` 解析成 `node_modules` 里的真实文件，动画才会生效。
+
+不跑 Vite 也可以直接起静态服务：
 
 ```bash
 python -m http.server 8000
 # 浏览器打开 http://localhost:8000
 ```
 
-这种情况下页面不会白屏——只是没有动画，原因见下面「动画的降级」一节。
+但这样 `import "animejs"` 这种**裸模块名**浏览器解析不了（控制台会报 `Failed to resolve module specifier "animejs"`），结果是页面正常显示、动画不生效。原因见下面「动画的降级」一节。
+
+另外**不能双击 `index.html` 打开**：ES 模块必须通过 http 协议加载，`file://` 会被浏览器拦下（控制台报 CORS）。
 
 ## CSS 是怎么拆的
 
@@ -87,7 +104,7 @@ python -m http.server 8000
 
 ```
 main.js ──> hero.js ──┐
-        ├─> list.js ──┼──> motion.js ──> anime.js（CDN 的 ES 模块版本）
+        ├─> list.js ──┼──> motion.js ──> anime.js（npm 包，由 Vite 解析并打包）
         └─> post.js ──┘
 ```
 
@@ -116,7 +133,7 @@ main.js ──> hero.js ──┐
 
 - `css/effects.css` 里所有"先藏起来"的规则都挂在 `html.motion` 下，默认状态元素是可见的；
 - `main.js` 在加载动画模块**之前**才加上 `motion` 类；
-- 动画模块加载失败（CDN 挂了）或用户系统开了"减少动态效果"，`main.js` 就把这个类去掉，页面直接以完整静态状态呈现。
+- 动画模块加载失败（比如没走 Vite、直接用静态服务打开，导致 `animejs` 这个裸模块名解析不了）或用户系统开了"减少动态效果"，`main.js` 就把这个类去掉，页面直接以完整静态状态呈现。
 
 效果就是：**动画是加分项，不是内容能否显示的前提。**
 
@@ -152,10 +169,13 @@ main.js ──> hero.js ──┐
 
 ### Nginx（推荐，长期用）
 
-服务器上拉代码：
+服务器上拉代码、装依赖、构建：
 
 ```bash
 git clone <你的仓库地址> /var/www/play-log
+cd /var/www/play-log
+npm ci          # 按 package-lock.json 装依赖，和 npm install 等价但更严格
+npm run build   # 产物在 dist/
 ```
 
 新建 `/etc/nginx/conf.d/play-log.conf`：
@@ -165,7 +185,7 @@ server {
     listen 80;
     server_name 你的域名或服务器IP;
 
-    root /var/www/play-log;
+    root /var/www/play-log/dist;
     index index.html;
 
     location / {
@@ -174,27 +194,30 @@ server {
 }
 ```
 
+注意 `root` 指向的是 **`dist/`**，不是仓库根目录：源码里的 `import "animejs"` 要经过构建才会变成浏览器能直接加载的文件。
+
 然后：
 
 ```bash
 nginx -t && systemctl reload nginx
 ```
 
-以后更新内容只需要：
+以后更新内容：
 
 ```bash
-cd /var/www/play-log && git pull
+cd /var/www/play-log && git pull && npm ci && npm run build
 ```
 
 Nginx 不用重启，刷新页面即可。
 
-`.js` 文件由 Nginx 默认的 `mime.types` 认成 `text/javascript`，`type="module"` 才能正常执行，不用额外配置。
+`dist/` 里的 `.js` 文件由 Nginx 默认的 `mime.types` 认成 `text/javascript`，`type="module"` 才能正常执行，不用额外配置。
 
 ### 临时验证（调试用）
 
 ```bash
 cd /var/www/play-log
-python3 -m http.server 80
+npm run build
+cd dist && python3 -m http.server 80
 ```
 
 关掉终端就停，只适合用来确认能访问，别长期这么跑。

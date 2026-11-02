@@ -1,6 +1,6 @@
 // 动画底座：所有动画模块都从这里拿 anime.js，只加载一次
 // 注意网址末尾的 +esm —— 这是 anime.js 的 ES 模块版本（不是挂 window.anime 的 IIFE 版）
-import { animate, stagger } from "https://cdn.jsdelivr.net/npm/animejs@4/+esm";
+import { animate, stagger } from "animejs";
 
 export { animate, stagger };
 
