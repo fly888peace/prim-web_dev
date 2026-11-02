@@ -1,0 +1,38 @@
+/* ==========================================================
+   小屏适配
+   ========================================================== */
+
+@media (max-width: 640px) {
+  .hero { padding: 80px 22px 52px; }
+  .hero::before { width: 100%; height: 240px; }
+
+  .entry {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 24px 0;
+  }
+
+  .entry__title { font-size: 18px; }
+
+  .post__head { padding: 40px 22px 32px; }
+
+  .article p, .article ul, .article ol { font-size: 16px; line-height: 2.05; }
+  .article p { text-align: left; }
+
+  .article > p:first-of-type::first-letter {
+    font-size: 38px;
+    margin-right: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  .entry__thumb img,
+  .entry__title,
+  .entry__more,
+  .hero__title::after,
+  .reading-progress {
+    transition: none;
+  }
+}

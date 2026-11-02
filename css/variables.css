@@ -1,0 +1,27 @@
+/* ==========================================================
+   设计变量：颜色、字体、缓动，全站统一从这里取
+   ========================================================== */
+
+:root {
+  /* 纸感配色 */
+  --paper: #fdfcf9;
+  --ink: #1f1f1d;
+  --ink-soft: #5c5a54;
+  --ink-faint: #9b978e;
+  --line: #e6e2d8;
+  --accent: #7a6a4f;
+  --card: #ffffff;
+
+  /* 版心与节奏 */
+  --max: 760px;
+  --max-wide: 1040px;
+
+  /* 字体 */
+  --font-serif: "Songti SC", "Noto Serif SC", "Source Han Serif SC",
+    "SimSun", Georgia, serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+
+  /* 缓动 */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
