@@ -3,13 +3,13 @@ import Nav from "./Nav.jsx";
 import PageHeading from "./PageHeading.jsx";
 import AnimatedCardGrid from "./AnimatedCardGrid.jsx";
 
-// 关于页：结构上和首页一模一样——顶部 hero + 几张卡。
-// 差别只在内容，所以它复用的还是 Nav / PageHeading / AnimatedCardGrid 这三块。
-export default function AboutPage({ current, onNavigate }) {
+// 关于页：结构和首页一样——顶部 hero + 几张卡。
+// 纯展示，没有任何交互，所以它是服务端组件，顶上不用 "use client"。
+export default function AboutView() {
   return (
     <AnimatedCardGrid className="dashboard-grid">
       <article className="hero-stage panel-full">
-        <Nav current={current} onNavigate={onNavigate} />
+        <Nav />
         <PageHeading title={site.about.title} subtitle={site.about.subtitle} />
       </article>
 

@@ -1,3 +1,8 @@
+"use client";
+
+// 首页。结构、文案和 4.4 的 HomePage 一模一样（只是改名 HomePage → HomeView）。
+// 和 demo 不同的地方：这里的「筛选」用了 useState，所以它必须是客户端组件。
+// （demo 的 TextLab 把 state 藏在 InputCard 里，页面本身才可能留成服务端组件。）
 import { useState } from "react";
 import { posts } from "../data/posts.js";
 import { site } from "../data/site.js";
@@ -8,12 +13,11 @@ import SearchCard from "./SearchCard.jsx";
 import StatsCard from "./StatsCard.jsx";
 import PostCard from "./PostCard.jsx";
 
-// 一串日期写法固定是 2026.10.14，去掉点按数字比大小就够
+// 日期写法固定是 2026.10.14，去掉点按数字比大小就够
 const dateValue = (text) => Number(text.replace(/\./g, ""));
 
-export default function HomePage({ current, onNavigate, onOpen }) {
-  // 关键字存在这一层，因为「筛选框」和「记录列表」两个子组件都要用它。
-  // 谁的数据被多方共用，谁就往上挪一层——这是 React 里最常见的一次提级。
+export default function HomeView() {
+  // 关键字存在这一层：筛选框和记录列表两个子组件都要用它
   const [keyword, setKeyword] = useState("");
 
   const query = keyword.trim();
@@ -29,7 +33,7 @@ export default function HomePage({ current, onNavigate, onOpen }) {
   return (
     <AnimatedCardGrid className="dashboard-grid">
       <article className="hero-stage panel-full">
-        <Nav current={current} onNavigate={onNavigate} />
+        <Nav />
         <PageHeading title={site.home.title} subtitle={site.home.subtitle} />
       </article>
 
@@ -37,7 +41,7 @@ export default function HomePage({ current, onNavigate, onOpen }) {
       <StatsCard total={posts.length} games={gameCount} latest={latest} />
 
       {filtered.length ? (
-        filtered.map((post) => <PostCard key={post.id} post={post} onOpen={onOpen} />)
+        filtered.map((post) => <PostCard key={post.id} post={post} />)
       ) : (
         <article className="panel panel-full empty-panel">
           <p>没有匹配「{query}」的记录。</p>

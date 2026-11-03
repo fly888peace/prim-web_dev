@@ -1,70 +1,66 @@
 # 游戏记录
 
-React + Vite 的游玩记录站：截图 + 文字攻略。
+Next.js 15（App Router）的游玩记录站：截图 + 文字攻略。
 
-结构对齐课程 zero-to-tech 4.3/4.4 的 demo：两页切换 + dashboard 卡片栅格 + 路由/数据分离。
+三个页面，全部在 build 时**预渲染成真实的 HTML 文件**——直接访问不 404、首屏不用等 JS、爬虫也能读到内容。
 
-## 页面与路由
+## 页面（文件夹 = 路由）
 
-| 地址 | 页面 | 组件 |
-|---|---|---|
-| `/` | 记录列表 | `HomePage` |
-| `/about` | 关于 | `AboutPage` |
-| `/post/<id>` | 某篇记录 | `PostPage` |
+| 文件 | 地址 |
+|---|---|
+| `app/page.jsx` | `/` |
+| `app/about/page.jsx` | `/about` |
+| `app/post/[id]/page.jsx` | `/post/<id>`，比如 `/post/sample-01` |
 
-路由是自己写的 `src/router/useRoute.js`：把「当前在哪一页」存进 `window.location.pathname`，点导航用 `history.pushState` 改地址，前进/后退靠 `popstate`。真实项目里会用 react-router，这里为了看清原理手搓的。
+加页面不用注册路由，新建文件夹 + `page.jsx` 就行。加一篇记录也不用建文件，那是数据的事（见下）。
 
 ## 目录结构
 
 ```
 web_dev/
-├── index.html                空壳：<div id="root"> + 入口脚本
-├── vite.config.js            React 插件挂到 Vite
+├── app/
+│   ├── layout.jsx            全站外壳：<html>/<body> + 8 个 CSS + metadata
+│   ├── page.jsx              /
+│   ├── about/page.jsx        /about
+│   └── post/[id]/page.jsx    /post/<id>（generateStaticParams 决定预渲染哪几篇）
+├── components/
+│   ├── Nav.jsx               "use client"（Link + usePathname）
+│   ├── HomeView.jsx          "use client"（useState 筛选）
+│   ├── SearchCard.jsx        "use client"（受控输入）
+│   ├── AnimatedCardGrid.jsx  "use client"（anime.js 入场动画）
+│   ├── PostCard.jsx          服务端（Link）
+│   ├── PostView.jsx          服务端
+│   ├── AboutView.jsx         服务端
+│   ├── PageHeading.jsx       服务端
+│   ├── StatsCard.jsx         服务端
+│   └── PostBody.jsx          服务端
+├── data/
+│   ├── posts.js              ★ 所有记录的内容
+│   └── site.js               站点文案（品牌、导航、每页标题）
+├── css/                      8 个样式文件
 ├── public/images/            截图放这里，引用写 /images/xxx.jpg
-└── src/
-    ├── main.jsx              入口：引 8 个 CSS + createRoot 挂 App
-    ├── App.jsx               总管：读地址栏，三选一
-    ├── router/
-    │   └── useRoute.js       手写路由（pushState + popstate）
-    ├── data/
-    │   ├── posts.js          ★ 所有记录的内容
-    │   └── site.js           站点文案（品牌、导航、每页标题）
-    ├── css/                  8 个文件：reset/variables/layout/nav/hero/cards/post/responsive
-    └── components/
-        ├── Nav.jsx           顶部导航（三页共用）
-        ├── PageHeading.jsx   大标题（三页共用，内容靠 props）
-        ├── AnimatedCardGrid.jsx  12 列栅格容器 + 卡片错峰入场
-        ├── SearchCard.jsx    筛选卡（受控组件）
-        ├── StatsCard.jsx     统计卡
-        ├── PostCard.jsx      网格里的一张记录卡
-        ├── HomePage.jsx      首页 = hero + 筛选 + 统计 + 记录卡 × N
-        ├── AboutPage.jsx     关于页
-        ├── PostPage.jsx      详情页
-        └── PostBody.jsx      正文渲染：blocks 数组 → 标签
+└── next.config.mjs
 ```
 
-调用链：
+### `"use client"` 怎么判断
 
-```
-index.html → main.jsx（挂载，全项目唯一一次）
-  └─ App.jsx（读 useRoute 的 path，三选一）
-     ├─ HomePage  → AnimatedCardGrid[ Nav + PageHeading + SearchCard + StatsCard + PostCard × N ]
-     ├─ AboutPage → AnimatedCardGrid[ Nav + PageHeading + 三张卡 ]
-     └─ PostPage  → AnimatedCardGrid[ Nav + 返回 + PageHeading + 正文大卡 ]
-```
+- 用到 `useState` / `useEffect` / `usePathname` / 点击事件 / 动画 → 顶上写 `"use client"`
+- 纯展示、只是把别的组件摆在一起 → 不写，默认是服务端组件，build 时直接渲染成 HTML
 
-## 本地跑
+注意：写了 `"use client"` 不等于「不预渲染」。客户端组件同样会被预渲染成 HTML，只是额外再送一份 JS 到浏览器让它能交互。
+
+## 命令
 
 ```bash
 npm install     # 只需一次
-npm run dev
+npm run dev     # 开发，http://localhost:3000（注意不是 5173）
+npm run build   # 构建
+npm start       # 用构建产物起服务，同样是 3000
 ```
-
-打开终端给的地址（http://localhost:5173）。**不要双击 index.html**——浏览器不认 .jsx。
 
 ## 加一条记录
 
-只改 `src/data/posts.js`，在数组最前面加一个对象：
+只改 `data/posts.js`，在数组最前面加一个对象：
 
 ```js
 {
@@ -73,7 +69,7 @@ npm run dev
   date: "2026.11.02",
   title: "宁姆格福开荒路线",
   excerpt: "列表卡片上的两行摘要",
-  cover: "/images/eldenring-01.jpg",   // 截图先放进 public/images/
+  cover: "/images/eldenring-01.jpg",
   coverAlt: "游戏截图",
   coverCaption: "详情页封面下的小字",
   body: [
@@ -88,35 +84,53 @@ npm run dev
 }
 ```
 
-存盘自动刷新。首页的统计卡、筛选、详情页全部跟着变——它们读的是同一份数据。
+`generateStaticParams` 会自动把新 id 加入预渲染列表，`/post/eldenring-01` 直接可访问。截图丢进 `public/images/`。
 
-改站点文字（品牌名、导航、各页标题、关于页文案）在 `src/data/site.js`。
+改站点文字在 `data/site.js`。
 
-## 部署（Nginx）
+## 部署
+
+和 Vite 那版不同：**Nginx 不能直接指向源码或某个静态目录了**，Next 有自己的服务器。
+
+### 方案 A：Node 常驻 + Nginx 反代（推荐）
 
 ```bash
-git clone <你的仓库地址> /var/www/play-log
-cd /var/www/play-log
-npm ci
-npm run build
+# 服务器上，先装 Node（nvm 或 apt 都行）
+cd ~/web_dev && git pull && npm install && npm run build
+npm start            # 监听 3000，可以配合 pm2 / systemd 常驻
 ```
 
-`/etc/nginx/conf.d/play-log.conf`：
+Nginx 只做转发：
 
 ```nginx
 server {
     listen 80;
-    server_name 你的域名或服务器IP;
-
-    root /var/www/play-log/dist;
-    index index.html;
+    server_name 你的域名或IP;
 
     location / {
-        try_files $uri $uri/ /index.html;
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 }
 ```
 
-`root` 必须指向 `dist/`；`try_files` 最后一行 `/index.html` **这次是必需的**——路由改成了 pathname（`/about`、`/post/xxx`），用户直接打开或刷新这些地址时，要让 Nginx 把 index.html 返回给浏览器，否则 404。
+### 方案 B：静态导出，仍交给 Nginx
 
-更新内容：`git pull && npm ci && npm run build`，不用重启 Nginx。
+`next.config.mjs` 加一行 `output: "export"`，然后 `npm run build`，产物在 `out/`，可以像 Vite 的 `dist/` 一样丢给 Nginx：
+
+```nginx
+root /var/www/web_dev/out;
+location / {
+    try_files $uri $uri/ $uri.html /index.html;
+}
+```
+
+代价：所有页面在 build 时就定死了，以后要加「每次请求都不同」的动态内容就没法办。当前这个站全是静态内容，方案 B 完全够用。
+
+## 和上一版（Vite + React）的差别
+
+- `index.html`、`main.jsx`、`App.jsx`、`src/router/useRoute.js` 全部删掉了：路由交给文件夹，挂载交给框架
+- 跳转从 `onClick + history.pushState` 换成 `<Link href>`
+- 页面不再是一个空 `<div id="root">` + JS 现画，而是 build 出真实的 `.html` 文件
+- 每个页面的标题从 `generateMetadata` 出，爬虫不跑 JS 也读得到
