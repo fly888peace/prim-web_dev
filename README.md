@@ -2,183 +2,142 @@
 
 记录自己玩过的游戏：截图 + 文字攻略。
 
-静态站点，没有框架。动画依赖 anime.js（npm 包，构建时由 Vite 解析并打包）。
-样式拆成 `css/` 下一组小文件，脚本拆成 `js/` 下一组 **ES 模块**，页面只引入口。
-
-`node_modules/` 和构建产物 `dist/` 都不进 Git：前者由 `npm install` 按 `package-lock.json` 重建，后者由 `npm run build` 现场生成。仓库里只有源码和依赖清单，不需要把几百兆的 `node_modules` 传上去。
+React + Vite。页面结构、正文内容都写在组件和数据文件里，`index.html` 只是一个空壳挂载点。
 
 ## 目录结构
 
 ```
 web_dev/
-├── index.html              首页：所有记录的列表
-├── package.json            依赖与脚本（vite / animejs）
-├── package-lock.json       锁定依赖版本，保证每台机器装出来都一样
-├── node_modules/           本地依赖，不入库，npm install 重建
-├── dist/                   构建产物，不入库，npm run build 生成
-├── css/
-│   ├── variables.css       设计变量：配色、字体、缓动
-│   ├── reset.css           基础重置：盒模型、body 基线、图片、选区
-│   ├── layout.css          版心骨架：main 容器宽度
-│   ├── hero.css            首屏：小标 / 大标题 / 副标题 / 墨线
-│   ├── list.css            首页记录列表与悬停效果
-│   ├── post.css            详情页：标题区、封面、正文排版、阅读进度条
-│   ├── footer.css          页脚
-│   ├── effects.css         入场动效的"起手状态"与降级规则
-│   └── responsive.css      小屏适配 + 减少动态效果
-├── js/
-│   ├── main.js             全站入口：只负责按需加载并调用各模块
-│   ├── motion.js           动画底座：anime.js 引入 + 滚动入场封装
-│   ├── hero.js             首屏：标题拆字、逐字上浮
-│   ├── list.js             首页：记录条目整组错峰入场
-│   ├── post.js             详情页：正文逐段浮现 + 阅读进度条
-│   └── year.js             页脚年份
-├── posts/
-│   ├── sample-01.html      一篇记录（示例，可删）
-│   └── sample-02.html      另一篇记录（示例，可删）
-└── assets/
-    └── images/
-        ├── cover-01.svg    占位图，换成你自己的截图
-        └── cover-02.svg
+├── index.html                空壳：只有 <div id="root"> 和一行入口脚本
+├── package.json              依赖与脚本（vite / react / animejs）
+├── vite.config.js            把 React 插件挂到 Vite 上
+├── public/
+│   └── images/               图片放这里，引用时写 /images/xxx.jpg
+├── src/
+│   ├── main.jsx              总入口：引 9 个 CSS，把 App 挂进 #root
+│   ├── App.jsx               总管：决定显示首页还是某篇记录
+│   ├── data/
+│   │   └── posts.js          ★ 所有记录的内容都在这里
+│   ├── lib/
+│   │   └── motion.js         动画底座：anime.js + 滚动入场封装
+│   ├── css/                  9 个样式文件，从旧版原样搬来
+│   │   ├── variables.css     设计变量：配色、字体、缓动
+│   │   ├── reset.css         基础重置
+│   │   ├── layout.css        版心骨架
+│   │   ├── hero.css          首屏
+│   │   ├── list.css          首页记录列表
+│   │   ├── post.css          详情页排版 + 阅读进度条
+│   │   ├── footer.css        页脚
+│   │   ├── effects.css       入场动效的"起手状态"与降级
+│   │   └── responsive.css    小屏适配 + 减少动态效果
+│   └── components/
+│       ├── SiteHero.jsx      首屏：标题拆字逐字上浮
+│       ├── PostList.jsx      列表容器：条目错峰入场
+│       ├── PostEntry.jsx     列表里的一条
+│       ├── PostDetail.jsx    详情页：标题区 + 封面 + 正文 + 进度条
+│       ├── PostBody.jsx      正文渲染：把 blocks 数组翻成标签
+│       └── Footer.jsx        页脚
+├── node_modules/             本地依赖，不入库
+└── dist/                     构建产物，不入库
 ```
 
-## 本地预览
+组件之间的调用关系：
 
-先装依赖（只需一次；`node_modules` 不在仓库里，换台机器要重新装）：
+```
+index.html
+└─ src/main.jsx
+   └─ App.jsx
+      ├─ 首页：SiteHero → main > PostList → PostEntry × N → Footer
+      └─ 详情：PostDetail → PostBody → Footer
+```
+
+## 本地跑
 
 ```bash
-npm install
+npm install     # 只需一次
 npm run dev
 ```
 
-终端会给出一个 `http://localhost:5173` 之类的地址，浏览器打开即可。Vite 负责把 `motion.js` 里的 `import "animejs"` 解析成 `node_modules` 里的真实文件，动画才会生效。
+终端给的地址（一般是 http://localhost:5173）直接用浏览器打开。
 
-不跑 Vite 也可以直接起静态服务：
+**不要双击 `index.html` 打开**：浏览器不认 `.jsx`，必须经过 Vite 编译。
+
+## 加一条记录
+
+只需要改 `src/data/posts.js`，不用碰任何 HTML。
+
+1. 截图丢进 `public/images/`，比如 `eldenring-01.jpg`。
+   宽度压到 1600px 以内、单张 500KB 以下就够，手机上看也快。
+2. 打开 `src/data/posts.js`，在数组**最前面**加一个对象：
+
+```js
+{
+  id: "eldenring-01",              // 会成为地址栏的 #eldenring-01，别重名
+  game: "艾尔登法环",
+  date: "2026.11.02",
+  title: "宁姆格福开荒路线",
+  excerpt: "列表里显示的两行摘要",
+  cover: "/images/eldenring-01.jpg",   // 列表缩略图 + 详情页封面用同一张
+  coverAlt: "游戏截图",
+  coverCaption: "封面图下面那行小字",
+  body: [ /* 正文，见下 */ ]
+}
+```
+
+3. `body` 是一个数组，按顺序往下排，支持这几种块：
+
+```js
+{ type: "p",      text: "一个段落" }
+{ type: "h2",     text: "小标题" }
+{ type: "ul",     items: ["条目一", "条目二"] }
+{ type: "ol",     items: ["第一步", "第二步"] }
+{ type: "quote",  text: "引用块" }
+{ type: "figure", src: "/images/eldenring-02.jpg", alt: "说明", caption: "图下小字" }
+{ type: "hr" }
+```
+
+存盘，页面自动刷新。列表和详情都会跟着变——它们读的是同一份数据。
+
+正文里的段落不需要额外注册：`PostDetail.jsx` 是按 `.article > *` 逐个观察的，新块自动带入场动画。
+
+## 几个设计点
+
+**CSS 完全没被 React 碰过。** 9 个文件是旧的 vanilla 版本原样搬来的，唯一的变化是从 `<link>` 改成了 `main.jsx` 里的 `import`——那是 Vite 的扩展语法，它负责合并、注入/抽取，React 只负责在 JSX 里写 `className`。
+
+**动画的降级。** `effects.css` 里所有"先藏起来"的规则都挂在 `html.motion` 下；`main.jsx` 只在 `motionEnabled()` 为真（用户没开"减少动态效果"）时才加这个类。加类之前不渲染，避免第一帧闪一下完整内容。
+
+**StrictMode 下别乱加"只跑一次"的标记。** 开发模式下 effect 会「执行 → 清理 → 再执行」。如果第二次靠标记直接 return，而第一次的 observer 已经被清理掉，列表会永远停在 `opacity:0` 上（整块空白）。`PostList.jsx` 里有一段注释专门记这个坑。
+
+**进度条有两层实现。** `post.css` 里写了 `@supports (animation-timeline: scroll())` 的纯 CSS 版本，浏览器支持滚动驱动动画时 JS 不参与；不支持的浏览器才走 `PostDetail.jsx` 里的 `scaleX` 计算。
+
+**拆字不影响读屏。** `SiteHero.jsx` 拆字时保留完整 `aria-label`，逐字 `<span>` 标了 `aria-hidden="true"`。
+
+## 地址与刷新
+
+记录页的地址是 `#记录 id`，比如 `http://你的域名/#sample-01`。
+
+- 分享这串链接，对方直接落在这一篇；
+- 刷新不会退回首页；
+- 浏览器前进/后退可用。
+
+`App.jsx` 里那两段 `useEffect` 就是干这个的，属于课程 4.3 之外的补充。不想要的话删掉这两段，把 `openPost` / `closePost` 改成只 `setActiveId(...)` 即可，代价是刷新会回首页、链接没法分享。
+
+## 构建与部署
 
 ```bash
-python -m http.server 8000
-# 浏览器打开 http://localhost:8000
+npm run build     # 产物在 dist/
 ```
 
-但这样 `import "animejs"` 这种**裸模块名**浏览器解析不了（控制台会报 `Failed to resolve module specifier "animejs"`），结果是页面正常显示、动画不生效。原因见下面「动画的降级」一节。
-
-另外**不能双击 `index.html` 打开**：ES 模块必须通过 http 协议加载，`file://` 会被浏览器拦下（控制台报 CORS）。
-
-## CSS 是怎么拆的
-
-按"改哪块就开哪个文件"来分，不是一个选择器一个文件那么碎：
-
-- `variables.css` 只放变量。想改主色、改版心宽度、改缓动曲线，只动这一个文件。
-- `reset.css` 只做浏览器默认样式的必要清理。
-- `layout.css` 只放版心，不掺任何视觉。
-- `hero.css` / `list.css` / `post.css` / `footer.css` 按页面区块分。
-- `effects.css` 只放动画的初始状态和降级规则，和布局互不干扰。
-- `responsive.css` 放所有 `@media`，避免媒体查询散落各处。
-
-引用的顺序有讲究，HTML 里按这个顺序排：
-
-```html
-<link rel="stylesheet" href="css/variables.css">
-<link rel="stylesheet" href="css/reset.css">
-<link rel="stylesheet" href="css/layout.css">
-<link rel="stylesheet" href="css/hero.css">   <!-- 详情页换成 css/post.css -->
-<link rel="stylesheet" href="css/list.css">   <!-- 详情页没有列表，不引 -->
-<link rel="stylesheet" href="css/footer.css">
-<link rel="stylesheet" href="css/effects.css">
-<link rel="stylesheet" href="css/responsive.css">
-```
-
-变量文件放在最前面，后面的文件才能直接用 `var(--accent)`；`responsive.css` 放最后，媒体查询里的规则才能覆盖前面的常规规则。
-
-## JS 是怎么模块化的
-
-页面底部只有一行：
-
-```html
-<script type="module" src="js/main.js"></script>
-```
-
-详情页在子目录，写成 `../js/main.js`。
-
-依赖关系全写在 `import` 里，不再靠 `<script>` 的先后顺序：
-
-```
-main.js ──> hero.js ──┐
-        ├─> list.js ──┼──> motion.js ──> anime.js（npm 包，由 Vite 解析并打包）
-        └─> post.js ──┘
-```
-
-各文件的分工：
-
-| 文件 | 职责 | 对外暴露 |
-| --- | --- | --- |
-| `main.js` | 唯一入口，`html` 打标记、按需加载动画模块 | 无 |
-| `motion.js` | 引入 anime.js，封装"滚到才入场"的观察器 | `animate` / `stagger` / `revealEach` / `revealGroup` |
-| `hero.js` | 标题拆字 + 逐字入场 | `initHero()` |
-| `list.js` | 首页条目错峰入场 | `initList()` |
-| `post.js` | 正文逐段浮现 + 顶部进度条 | `initPost()` |
-| `year.js` | 页脚年份 | `initYear()` |
-
-每个 `init` 函数进来先找自己的目标元素，找不到就直接 `return`。所以同一份 `main.js` 在首页和详情页都能跑，不会因为"这页没有列表"而报错。
-
-### 想再加一个动画
-
-1. 新建 `js/xxx.js`，从 `./motion.js` 里 `import` 需要的东西，导出 `initXxx()`；
-2. 在 `js/main.js` 的 `Promise.all` 里加一行 `import("./xxx.js")`，下面补一句 `xxx.initXxx()`；
-3. 元素需要在入场前先藏起来，就把它的选择器加进 `css/effects.css`。
-
-## 动画的降级
-
-这是这套写法里唯一需要特意设计的地方：
-
-- `css/effects.css` 里所有"先藏起来"的规则都挂在 `html.motion` 下，默认状态元素是可见的；
-- `main.js` 在加载动画模块**之前**才加上 `motion` 类；
-- 动画模块加载失败（比如没走 Vite、直接用静态服务打开，导致 `animejs` 这个裸模块名解析不了）或用户系统开了"减少动态效果"，`main.js` 就把这个类去掉，页面直接以完整静态状态呈现。
-
-效果就是：**动画是加分项，不是内容能否显示的前提。**
-
-阅读进度条还多一层兜底：`css/post.css` 里写了 `@supports (animation-timeline: scroll())` 的纯 CSS 版本，浏览器支持滚动驱动动画时由它直接按滚动位置画进度，JS 不参与；不支持的浏览器才走 `post.js` 里那套 `scaleX` 计算。
-
-另外 `hero.js` 拆字时会保留完整的 `aria-label`，逐字 `<span>` 标了 `aria-hidden="true"`，读屏软件念到的还是原来那句话。
-
-## 新增一篇记录
-
-1. 把截图放进 `assets/images/`，建议命名成 `游戏名-01.jpg` 这种，方便找。
-   图片宽度压到 1600px 以内就够，单张控制在 500KB 以下，手机上看也快。
-2. 复制 `posts/sample-01.html`，改名成你自己的一篇，比如 `posts/eldenring-01.html`。
-3. 改里面这几处：
-   - `<title>` 和 `<h1 class="post__title">` —— 标题
-   - `post__game` 里的游戏名、`post__date` 里的日期
-   - 封面图 `post__cover` 的 `src`
-   - 正文 `<article class="article">` 里的 `h2` / `p` / `ul` / `figure`
-4. 回到首页 `index.html`，复制一整块 `<a class="entry">...</a>`，把 `href` 指向新页面，
-   改缩略图 `src`、游戏名、日期、标题、摘要。
-
-正文里想插图就用：
-
-```html
-<figure>
-  <img src="../assets/images/你的图.jpg" alt="图片说明">
-  <figcaption>图下面这行小字</figcaption>
-</figure>
-```
-
-正文里加新段落不需要做任何额外处理：`post.js` 是按 `.article > *` 逐个观察的，新段落会自动带入场动画。
-
-## 部署到服务器
-
-### Nginx（推荐，长期用）
-
-服务器上拉代码、装依赖、构建：
+Nginx（长期用）：
 
 ```bash
 git clone <你的仓库地址> /var/www/play-log
 cd /var/www/play-log
-npm ci          # 按 package-lock.json 装依赖，和 npm install 等价但更严格
-npm run build   # 产物在 dist/
+npm ci
+npm run build
 ```
 
-新建 `/etc/nginx/conf.d/play-log.conf`：
+`/etc/nginx/conf.d/play-log.conf`：
 
 ```nginx
 server {
@@ -189,54 +148,29 @@ server {
     index index.html;
 
     location / {
-        try_files $uri $uri/ =404;
+        try_files $uri $uri/ /index.html;
     }
 }
 ```
 
-注意 `root` 指向的是 **`dist/`**，不是仓库根目录：源码里的 `import "animejs"` 要经过构建才会变成浏览器能直接加载的文件。
+`root` 必须指向 **`dist/`**，不是仓库根目录：`.jsx` 要经过构建才能变成浏览器认识的文件。
 
-然后：
+`try_files` 最后那行 `/index.html` 是为以后接前端路由留的，现在只有 `#` 锚点跳转，用不到也不会出错。
 
-```bash
-nginx -t && systemctl reload nginx
-```
-
-以后更新内容：
+更新内容：
 
 ```bash
 cd /var/www/play-log && git pull && npm ci && npm run build
 ```
 
-Nginx 不用重启，刷新页面即可。
+不用重启 Nginx。
 
-`dist/` 里的 `.js` 文件由 Nginx 默认的 `mime.types` 认成 `text/javascript`，`type="module"` 才能正常执行，不用额外配置。
-
-### 临时验证（调试用）
+临时验证（不上 Nginx）：
 
 ```bash
-cd /var/www/play-log
-npm run build
-cd dist && python3 -m http.server 80
+npm run build && cd dist && python3 -m http.server 80
 ```
 
-关掉终端就停，只适合用来确认能访问，别长期这么跑。
+## 清理
 
-## 关于路径
-
-详情页在 `posts/` 目录里，所以它引用根目录的东西要加 `../`：
-
-- 样式：`../css/post.css`
-- 脚本：`../js/main.js`
-- 图片：`../assets/images/xxx.jpg`
-- 回首页：`../index.html`
-
-首页在根目录，引用时不需要 `../`，脚本直接写 `js/main.js`。这是唯一容易写错的地方。
-
-## 上线前可以把示例删掉
-
-```bash
-rm posts/sample-01.html posts/sample-02.html
-```
-
-再删掉 `index.html` 里对应的两个 `<a class="entry">` 块。
+`src/components/ResultCard.jsx` 是 4.3「第一拍」留下的练习文件，没有任何组件引用它，构建时不会被打包。确认不需要了可以删掉。
