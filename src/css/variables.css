@@ -1,27 +1,38 @@
 /* ==========================================================
-   设计变量：颜色、字体、缓动，全站统一从这里取
+   2/8 设计变量：配色、圆角、字体、版心宽度
+   想换主色 / 换气质，只动这个文件
    ========================================================== */
 
 :root {
-  /* 纸感配色 */
-  --paper: #fdfcf9;
-  --ink: #1f1f1d;
-  --ink-soft: #5c5a54;
-  --ink-faint: #9b978e;
-  --line: #e6e2d8;
+  /* 纸面 */
+  --page-bg: #f4f2ec;
+  --surface: #ffffff;
+  --surface-soft: #faf8f3;
+
+  /* 文字 */
+  --ink: #1f1d19;
+  --ink-soft: rgba(31, 29, 25, 0.72);
+  --ink-muted: rgba(31, 29, 25, 0.52);
+  --ink-faint: rgba(31, 29, 25, 0.38);
+
+  /* 主题色：旧的棕，保留 */
   --accent: #7a6a4f;
-  --card: #ffffff;
+  --accent-soft: rgba(122, 106, 79, 0.12);
 
-  /* 版心与节奏 */
-  --max: 760px;
-  --max-wide: 1040px;
+  /* 线与阴影 */
+  --line: rgba(31, 29, 25, 0.09);
+  --shadow: 0 10px 30px rgba(80, 66, 40, 0.07);
+  --shadow-hover: 0 18px 44px rgba(80, 66, 40, 0.13);
 
-  /* 字体 */
-  --font-serif: "Songti SC", "Noto Serif SC", "Source Han Serif SC",
-    "SimSun", Georgia, serif;
+  /* 形状与版心 */
+  --radius-panel: 22px;
+  --radius-soft: 12px;
+  --maxw: 1040px;
+  --grid-gap: 20px;
+
+  /* 字体：正文无衬线，标题宋体 */
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
-
-  /* 缓动 */
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --font-serif: "Songti SC", "Noto Serif SC", "Source Han Serif SC",
+    "SimSun", Georgia, serif;
 }

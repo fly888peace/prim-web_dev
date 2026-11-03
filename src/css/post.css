@@ -1,130 +1,45 @@
 /* ==========================================================
-   详情页：标题区、封面、正文排版、阅读进度条
+   7/8 详情页：正文大卡 + 封面 + 排版
    ========================================================== */
 
-/* 顶部阅读进度：宽度不写死，post.js 里按滚动比例改 scaleX */
-.reading-progress {
-  position: fixed;
-  inset: 0 0 auto 0;
-  height: 3px;
-  z-index: 40;
-  background: linear-gradient(90deg, #7a6a4f 0%, #a2906f 100%);
-  box-shadow: 0 0 10px rgba(122, 106, 79, 0.35);
-  transform: scaleX(0);
-  transform-origin: 0 50%;
-  will-change: transform;
+.post-panel {
+  padding: 0;
+  overflow: hidden;
 }
 
-/* 纯 CSS 兜底：浏览器支持滚动驱动动画时，滚动条位置直接驱动进度，
-   不依赖 JS（比如直接双击本地文件打开、模块被拦下的情况）。
-   不支持的老浏览器就退回上面由 post.js 控制的那套。 */
-@supports (animation-timeline: scroll()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .reading-progress {
-      animation: reading-grow linear both;
-      animation-timeline: scroll(root block);
-    }
-
-    @keyframes reading-grow {
-      from { transform: scaleX(0); }
-      to { transform: scaleX(1); }
-    }
-  }
-}
-
-.post__head {
-  max-width: var(--max);
-  margin: 0 auto;
-  padding: 64px 24px 40px;
-}
-
-.post__back {
-  display: inline-block;
-  margin-bottom: 34px;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  color: var(--ink-faint);
-  text-decoration: none;
-  transition: color 0.25s ease;
-}
-
-.post__back:hover { color: var(--accent); }
-
-.post__meta {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  margin-bottom: 16px;
-  font-size: 11.5px;
-  letter-spacing: 0.1em;
-  color: var(--ink-faint);
-  font-variant-numeric: tabular-nums;
-}
-
-.post__game { color: var(--accent); }
-
-.post__title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: clamp(26px, 4.6vw, 34px);
-  font-weight: 500;
-  line-height: 1.55;
-  letter-spacing: 0.02em;
-  text-wrap: balance;
-}
-
-.post__cover {
-  max-width: var(--max-wide);
-  margin: 0 auto 56px;
-  padding: 0 24px;
-}
-
-.post__cover img {
+.post-cover {
   width: 100%;
-  border-radius: 3px;
-  background: #f1eee6;
+  aspect-ratio: 21 / 9;
+  object-fit: cover;
+  background: var(--surface-soft);
 }
 
-.post__cover figcaption {
-  margin-top: 12px;
-  font-size: 12px;
-  color: var(--ink-faint);
-  text-align: center;
-  letter-spacing: 0.04em;
-}
-
-/* ---------- 正文 ---------- */
 .article {
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 0 24px;
+  padding: 30px 40px 42px;
 }
 
 .article p {
-  margin: 0 0 26px;
-  font-size: 16.5px;
-  line-height: 2.1;
-  color: #322f2a;
+  margin: 0 0 24px;
+  font-size: 16px;
+  line-height: 2.05;
+  color: #33302a;
   text-align: justify;
-  text-wrap: pretty;
 }
 
-/* 首段首字下沉：纸感排版里最常见的一种开场 */
 .article > p:first-of-type::first-letter {
-  float: left;
-  margin: 8px 10px 0 0;
   font-family: var(--font-serif);
-  font-size: 46px;
-  line-height: 0.9;
+  font-size: 40px;
+  line-height: 1;
+  margin-right: 8px;
   color: var(--accent);
 }
 
 .article h2 {
-  margin: 56px 0 22px;
+  margin: 44px 0 20px;
   font-family: var(--font-serif);
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
 }
 
 .article h2::after {
@@ -137,62 +52,60 @@
   opacity: 0.5;
 }
 
-.article h3 {
-  margin: 38px 0 16px;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-
-.article ul, .article ol {
-  margin: 0 0 26px;
+.article ul,
+.article ol {
+  margin: 0 0 24px;
   padding-left: 22px;
-  font-size: 16px;
+  font-size: 15.5px;
   line-height: 2;
-  color: #322f2a;
+  color: #33302a;
 }
 
-.article li { margin-bottom: 8px; }
+.article ul { list-style: disc; }
+.article ol { list-style: decimal; }
+
+.article li {
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
 
 .article blockquote {
-  margin: 30px 0;
+  margin: 28px 0;
   padding: 4px 0 4px 20px;
-  border-left: 2px solid #d9cfb8;
-  color: var(--ink-soft);
-  font-size: 15.5px;
+  border-left: 2px solid rgba(122, 106, 79, 0.4);
 }
 
-.article blockquote p { margin: 0; font-size: 15.5px; }
+.article blockquote p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
 
 .article figure {
-  margin: 36px 0;
+  margin: 32px 0;
 }
 
 .article figure img {
   width: 100%;
-  border-radius: 3px;
-  background: #f1eee6;
+  border-radius: var(--radius-soft);
+  background: var(--surface-soft);
 }
 
 .article figcaption {
   margin-top: 10px;
   font-size: 12px;
+  letter-spacing: 0.04em;
   color: var(--ink-faint);
   text-align: center;
-  letter-spacing: 0.04em;
-}
-
-.article code {
-  padding: 1px 5px;
-  font-size: 0.9em;
-  background: #f2efe7;
-  border-radius: 3px;
 }
 
 .article hr {
-  margin: 48px 0;
+  margin: 44px 0;
   border: none;
   border-top: 1px solid var(--line);
 }
 
-.article em { font-style: normal; color: var(--accent); }
+.article em {
+  font-style: normal;
+  color: var(--accent);
+}

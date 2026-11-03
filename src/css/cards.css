@@ -1,0 +1,212 @@
+/* ==========================================================
+   6/8 卡片体系：panel 是外壳，card 是参与入场动画的标记
+   ========================================================== */
+
+.panel {
+  padding: 26px 28px 28px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow);
+}
+
+/* 动画起手状态：AnimatedCardGrid 挂载后用 anime.js 抬起来 */
+.card {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.section-kicker {
+  margin-bottom: 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--ink-faint);
+}
+
+.panel-title {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.panel-note {
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* === 筛选卡 === */
+.search-input {
+  width: 100%;
+  margin-top: 16px;
+  padding: 11px 14px;
+  font-size: 14.5px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-soft);
+  outline: none;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.search-input:focus {
+  border-color: rgba(122, 106, 79, 0.45);
+  background: var(--surface);
+}
+
+.search-input::placeholder {
+  color: var(--ink-faint);
+}
+
+/* === 统计卡 === */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.stats-item span {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.stats-item strong {
+  font-family: var(--font-serif);
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-item strong.stats-date {
+  font-size: 17px;
+  letter-spacing: 0.02em;
+  align-self: center;
+}
+
+/* === 记录卡 === */
+.post-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.post-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-3px);
+}
+
+.post-card__cover {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--surface-soft);
+}
+
+.post-card__cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.post-card:hover .post-card__cover img {
+  transform: scale(1.03);
+}
+
+.post-card__body {
+  padding: 18px 22px 22px;
+}
+
+.post-card__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.post-card__game {
+  color: var(--accent);
+}
+
+.post-card__title {
+  font-family: var(--font-serif);
+  font-size: 18.5px;
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: 0.02em;
+}
+
+.post-card__excerpt {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 8px;
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: var(--ink-soft);
+}
+
+/* === 空状态 === */
+.empty-panel {
+  padding: 40px 28px;
+  text-align: center;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 1px dashed var(--line);
+  box-shadow: none;
+}
+
+/* === 关于页 === */
+.about-lead {
+  max-width: 640px;
+  font-size: 16px;
+  line-height: 2;
+  color: var(--ink-soft);
+}
+
+.about-list li {
+  position: relative;
+  padding-left: 18px;
+  margin-bottom: 10px;
+  font-size: 14.5px;
+  line-height: 1.9;
+  color: var(--ink-soft);
+}
+
+.about-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.95em;
+  width: 7px;
+  height: 1px;
+  background: var(--accent);
+}
+
+.about-copy {
+  max-width: 480px;
+  font-size: 14.5px;
+  line-height: 2;
+  color: var(--ink-soft);
+}

@@ -1,8 +1,10 @@
 /* ==========================================================
-   基础重置：只做必要的几件事，别把浏览器默认行为全抹掉
+   1/8 基础重置：只做必要的清理，不加任何视觉
    ========================================================== */
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 html {
   -webkit-text-size-adjust: 100%;
@@ -11,16 +13,33 @@ html {
 
 body {
   margin: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1.9;
-  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
-img { display: block; max-width: 100%; }
+h1, h2, h3, p, figure, blockquote, ul, ol {
+  margin: 0;
+}
 
-a { color: inherit; }
+ul, ol {
+  padding: 0;
+  list-style: none;
+}
 
-::selection { background: #eae3d3; color: var(--ink); }
+img {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button, input, textarea, select {
+  font: inherit;
+  color: inherit;
+}
+
+::selection {
+  background: rgba(122, 106, 79, 0.18);
+}

@@ -1,12 +1,38 @@
 /* ==========================================================
-   布局骨架：首页与详情页共用的版心
+   3/8 布局骨架：页面外壳 + 12 列栅格
    ========================================================== */
 
-main {
-  max-width: var(--max);
-  margin: 0 auto;
-  padding: 0 24px;
+body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--ink);
+  background: var(--page-bg);
 }
 
-/* 详情页整页容器：底部留白，避免页脚贴住正文 */
-.post { padding-bottom: 100px; }
+.app-shell {
+  min-height: 100vh;
+  background: linear-gradient(
+    180deg,
+    #fbfaf6 0%,
+    var(--page-bg) 320px,
+    var(--page-bg) 100%
+  );
+  padding-bottom: 56px;
+}
+
+.page-shell {
+  width: min(var(--maxw), calc(100% - 40px));
+  margin: 0 auto;
+  padding-top: 28px;
+}
+
+/* 12 列栅格：所有卡片按列数占位 */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--grid-gap);
+}
+
+.panel-full { grid-column: span 12; }
+.panel-half { grid-column: span 6; }

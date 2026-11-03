@@ -1,64 +1,58 @@
-import { useEffect, useState } from "react";
+import { useRoute } from "./router/useRoute.js";
 import { posts } from "./data/posts.js";
-import SiteHero from "./components/SiteHero.jsx";
-import PostList from "./components/PostList.jsx";
-import PostDetail from "./components/PostDetail.jsx";
-import Footer from "./components/Footer.jsx";
-
-// 从地址栏的 # 后面读出「当前打开哪篇记录」。
-// #sample-01 → "sample-01"；没有 → null（首页）
-function readHashId() {
-  const id = decodeURIComponent(window.location.hash.replace(/^#\/?/, ""));
-  return id || null;
-}
+import HomePage from "./components/HomePage.jsx";
+import AboutPage from "./components/AboutPage.jsx";
+import PostPage from "./components/PostPage.jsx";
 
 /**
- * 总管组件。它只记一件事：现在该显示首页，还是某篇记录。
+ * 总管组件。它只干一件事：读地址栏，决定显示哪一页。
  *
- * 注意：下面这两段 useEffect 是课程 4.3 之外的补充。
- * 4.3 用 useState 在两个页面之间切换就够了，但那样有个副作用——
- * 刷新页面会退回首页、链接也没法发给别人。
- * 这里把状态和地址栏的 # 绑在一起，刷新和分享都能落回同一篇。
- * 不想要的话，把 hash 相关的两段删掉，openPost/closePost 改成只 setActiveId 即可。
+ * 地址栏和页面的对应关系：
+ *   /                  → 首页（记录列表）
+ *   /about             → 关于
+ *   /post/sample-01    → 某一篇记录
+ *
+ * 页面自己不知道地址是什么，它们只收到「现在该显示什么」和「要跳转时该怎么改」。
  */
 export default function App() {
-  const [activeId, setActiveId] = useState(readHashId);
+  const { path, navigate } = useRoute();
 
-  // 地址栏的 # 变了（前进/后退、手动改），跟着同步
-  useEffect(() => {
-    const sync = () => setActiveId(readHashId());
-    window.addEventListener("hashchange", sync);
-    return () => window.removeEventListener("hashchange", sync);
-  }, []);
+  // /post/ 后面那一截就是记录的 id
+  const postId = path.startsWith("/post/")
+    ? decodeURIComponent(path.slice("/post/".length))
+    : null;
+  const activePost = postId ? posts.find((post) => post.id === postId) : null;
 
-  // 换页时回到顶部，不然点开一篇长文会停在上一页的滚动位置
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [activeId]);
+  const page = activePost ? "post" : path.startsWith("/about") ? "about" : "home";
 
-  const openPost = (id) => {
-    window.location.hash = id;
-    setActiveId(id);
-  };
+  // 详情页也算「记录」区，导航里高亮「记录」
+  const navCurrent = page === "about" ? "about" : "home";
 
-  const closePost = () => {
-    window.location.hash = "";
-    setActiveId(null);
-  };
-
-  const activePost = posts.find((post) => post.id === activeId);
-
-  if (activePost) {
-    return <PostDetail post={activePost} onBack={closePost} />;
+  let content;
+  if (page === "post") {
+    content = (
+      <PostPage
+        post={activePost}
+        current={navCurrent}
+        onNavigate={navigate}
+        onBack={() => navigate("/")}
+      />
+    );
+  } else if (page === "about") {
+    content = <AboutPage current={navCurrent} onNavigate={navigate} />;
+  } else {
+    content = (
+      <HomePage
+        current={navCurrent}
+        onNavigate={navigate}
+        onOpen={(id) => navigate(`/post/${id}`)}
+      />
+    );
   }
 
   return (
-    <>
-      <SiteHero />
-      <main>
-        <PostList posts={posts} onOpen={openPost} />
-      </main>
-      <Footer />
-    </>
+    <div className="app-shell">
+      <div className="page-shell">{content}</div>
+    </div>
   );
 }
