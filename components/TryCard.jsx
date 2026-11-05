@@ -27,7 +27,7 @@ export default function TryCard() {
   async function openHistory() {
     setHistoryOpen(true);          // 先开弹窗，哪怕请求慢也立刻有反馈
     try {
-      const res = await fetch(`${API}/api/history`);
+      const res = await fetch(`${API}/api/history`, { credentials: "include" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setHistory(await res.json());
     } catch (err) {
@@ -48,6 +48,7 @@ export default function TryCard() {
       const res = await fetch(`${API}/api/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",   // 跨源也要带 cookie：这是前端「点头」
         body: JSON.stringify({ text }),
       });
 

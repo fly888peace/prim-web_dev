@@ -20,6 +20,7 @@ def init_db():
     cur.execute("""
     CREATE TABLE IF NOT EXISTS history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id TEXT,
         text TEXT,
         score REAL,
         label TEXT,
@@ -27,35 +28,40 @@ def init_db():
         createdAt TEXT
     )
     """)
-    # createdAt 是每次查询都要 ORDER BY 的列，值得建索引
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_history_created ON history(createdAt)")
-    conn.commit()
-    conn.close()
-
-
-def save_record(record):
-    """插入一条。值一律走 ? 占位，不拼字符串，从根上防注入。"""
-    conn = get_conn()
-    cur = conn.cursor()
+    # 查询从「按时间排」变成了「先按会话筛，再按时间排」，
+    # 索引也要跟着换成两列：先放用来筛的，再放用来排的。
     cur.execute(
-        "INSERT INTO history (text, score, label, pinyin, createdAt) VALUES (?, ?, ?, ?, ?)",
-        [record["text"], record["score"], record["label"], record["pinyin"], record["createdAt"]],
+        "CREATE INDEX IF NOT EXISTS idx_history_session_created "
+        "ON history(session_id, createdAt)"
     )
     conn.commit()
     conn.close()
 
 
-def get_history(limit):
-    """取最近 limit 条，新的在前。
+def save_record(session_id, record):
+    """插入一条，并盖上这个会话的记号。值一律走 ? 占位，不拼字符串。"""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO history (session_id, text, score, label, pinyin, createdAt)"
+        " VALUES (?, ?, ?, ?, ?, ?)",
+        [session_id, record["text"], record["score"],
+         record["label"], record["pinyin"], record["createdAt"]],
+    )
+    conn.commit()
+    conn.close()
 
-    文件版里要做的三件事（全量读、自己倒序、自己切片），
-    现在一句 SQL 全包了，Python 这边不再碰排序逻辑。
+
+def get_history(session_id, limit):
+    """只取这个会话自己的记录，最近的在前，最多 limit 条。
+
+    筛选、排序、截断三件事全交给 SQL，Python 这边不碰。
     """
     conn = get_conn()
     cur = conn.cursor()
     rows = cur.execute(
-        "SELECT * FROM history ORDER BY createdAt DESC LIMIT ?",
-        [limit],
+        "SELECT * FROM history WHERE session_id = ? ORDER BY createdAt DESC LIMIT ?",
+        [session_id, limit],
     ).fetchall()
     conn.close()
 
