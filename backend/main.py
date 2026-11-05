@@ -10,7 +10,13 @@ import uuid
 from datetime import datetime, timezone
 # 存储层：存哪儿、怎么存、怎么取都归 storage.py 管，这里只经过这一行
 from storage import init_db, save_record, get_history
+# 配置使能读取配置文件
+import os
+from dotenv import load_dotenv
 
+load_dotenv()                        # ← 读同目录下的 .env
+
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS").split(",")
 
 app = FastAPI()
 
@@ -18,7 +24,7 @@ init_db()   # 启动时确保库、表、索引都在；已经存在就跳过
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],   # 带凭证时不能用 *，必须点名到具体源
+    allow_origins=ALLOWED_ORIGINS,   # 带凭证时不能用 *，必须点名到具体源
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
     allow_credentials=True,                    # 允许跨源请求把 cookie 带过来
