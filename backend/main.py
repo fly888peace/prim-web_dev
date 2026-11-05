@@ -1,8 +1,14 @@
+# fastapi
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+# python三方库
 from pypinyin import lazy_pinyin, Style
 from snownlp import SnowNLP
+# 时间基准
+from datetime import datetime, timezone
+# 存储层：存哪儿、怎么存、怎么取都归 storage.py 管，这里只经过这一行
+from storage import save_record, get_history
 
 
 app = FastAPI()
@@ -41,10 +47,17 @@ def score_label(score):
 def analyze(req: AnalyzeRequest):
     text = req.text
     score = round(SnowNLP(text).sentiments, 2)                    # 真模型打的分
-    return {
+    result = {
         "text": text,
         "score": score,
-        "label": score_label(score),                                         # ← 先留着，下面处理
+        "label": score_label(score),                              # ← 先留着，下面处理
         "pinyin": " ".join(lazy_pinyin(text, style=Style.TONE)),  # 真拼音，带声调
+        "createdAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
+    save_record(result)
+    return result
+
+@app.get("/api/history")
+def history():
+    return get_history(10)     # 取多少条由接口层决定，storage 只管取
 
