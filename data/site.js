@@ -26,6 +26,6 @@ export const site = {
       "卡住的次数不删，那是记录的一部分。",
     ],
     colophon:
-      "这个站用 React + Vite 写成，样式手写，没有用任何 UI 框架。数据放在 src/data/posts.js，改一个对象就是新增一篇记录。",
+      "这个站用 Next.js + React 写成，样式手写，没有用任何 UI 框架。记录内容放在 data/posts.js，改一个对象就是新增一篇记录；首页标题和上面那张卡片的返回，来自 Python 写的后端。",
   },
 };

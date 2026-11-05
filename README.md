@@ -128,6 +128,69 @@ location / {
 
 代价：所有页面在 build 时就定死了，以后要加「每次请求都不同」的动态内容就没法办。当前这个站全是静态内容，方案 B 完全够用。
 
+## 前后端联调
+
+前端（3000）和后端（8000）是两个独立进程，各开一个终端。
+
+### 后端
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+uvicorn main:app --reload --port 8000
+```
+
+`--reload` 让改完 Python 自动重启，省得每次按 Ctrl+C。启动后打开 http://localhost:8000/docs 是 FastAPI 自动生成的接口文档。
+
+### 前端
+
+```powershell
+npm run dev      # http://localhost:3000
+```
+
+### 两个接口
+
+| 接口 | 用在哪 |
+|---|---|
+| `GET /api/profile` | 首页标题、副标题（拿不到就用 `data/site.js` 打底） |
+| `POST /api/analyze` | 关于页的「试一试」卡，返回分数和判断 |
+
+### 环境变量
+
+```bash
+# .env.local
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+```
+
+组件里读 `process.env.NEXT_PUBLIC_API_BASE_URL`。改完必须**重启** `npm run dev` 才生效，因为环境变量是启动时读的。
+
+`NEXT_PUBLIC_` 前缀意味着这个值会**被打包进浏览器代码**，只能放公开地址，不能放密钥。
+
+### CORS 是一对，别只改一半
+
+`backend/main.py` 里：
+
+```python
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],   # ← 前端的地址
+    allow_methods=["GET", "POST"],
+)
+```
+
+这个 `allow_origins` 必须和前端实际访问地址一致。换端口、换域名、部署上线，两边要同时改，否则浏览器报 CORS 错误。
+
+### 为什么点一次按钮会出现两条请求
+
+`POST /api/analyze` 带了 `Content-Type: application/json`，属于「非简单请求」，浏览器会先自动发一条 `OPTIONS` 预检，通过后才发真正的 POST。这条 OPTIONS 不是你写的代码，是浏览器发的，`curl` 里永远看不到。
+
+### 静态导出的注意点
+
+`next.config.mjs` 里用了 `output: "export"`，前端产物是一堆死文件，没有服务端。所以：
+
+- 所有 fetch 必须写在 `"use client"` 组件里
+- 后端地址在 **build 那一刻**就被写进 JS 了，改 `.env.local` 后必须重新 `npm run build`，光重启服务没用
+
 ## 和上一版（Vite + React）的差别
 
 - `index.html`、`main.jsx`、`App.jsx`、`src/router/useRoute.js` 全部删掉了：路由交给文件夹，挂载交给框架
