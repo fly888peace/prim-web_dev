@@ -10,6 +10,7 @@
 //
 // 打开 DevTools 的 Network，点一次按钮会看到两条请求：OPTIONS 在前，POST 在后。
 import { useState } from "react";
+import HistoryModal from "./HistoryModal.jsx";
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -18,6 +19,23 @@ export default function TryCard() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // 历史记录：数据本身 + 弹窗开关。点开的那一刻才去拉，不占首屏
+  const [history, setHistory] = useState([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  async function openHistory() {
+    setHistoryOpen(true);          // 先开弹窗，哪怕请求慢也立刻有反馈
+    try {
+      const res = await fetch(`${API}/api/history`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setHistory(await res.json());
+    } catch (err) {
+      // 后端没起来时不让页面崩掉，弹窗里显示「还没有记录」
+      console.warn("[history] 取历史失败：", err.message);
+      setHistory([]);
+    }
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -49,8 +67,15 @@ export default function TryCard() {
 
   return (
     <article className="panel panel-full card">
-      <p className="section-kicker">试一试</p>
-      <h3 className="panel-title">把一段文字发给后端</h3>
+      <div className="try-heading">
+        <div>
+          <p className="section-kicker">试一试</p>
+          <h3 className="panel-title">把一段文字发给后端</h3>
+        </div>
+        <button type="button" className="ghost-button" onClick={openHistory}>
+          历史记录
+        </button>
+      </div>
 
       <form className="try-form" onSubmit={handleSubmit}>
         <textarea
@@ -82,6 +107,12 @@ export default function TryCard() {
           </div>
         </div>
       ) : null}
+
+      <HistoryModal
+        open={historyOpen}
+        items={history}
+        onClose={() => setHistoryOpen(false)}
+      />
     </article>
   );
 }

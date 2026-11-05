@@ -21,3 +21,6 @@ dist/
 backend/.venv/
 backend/__pycache__
 
+# 运行时产生的数据，每台机器各有一份，不进 Git
+backend/*.db
+

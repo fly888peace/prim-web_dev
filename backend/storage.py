@@ -1,34 +1,65 @@
 # 存储层：数据存在哪儿、怎么存进去、怎么取出来。
-# 外面只跟这三个函数打交道，不关心底层是 JSON 文件还是数据库。
+# 实现从 JSON 文件换成了 SQLite，但外面看到的函数名和参数一个字没变。
 
-import json
+import sqlite3
 
-HISTORY_FILE = "history.json"
+DB_FILE = "history.db"
 
 
-def load_history():
-    """读出文件里的全部记录。文件还不存在时返回空列表。"""
-    try:
-        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return []
+def get_conn():
+    """开一个连接。每次用完立刻 close()，不留长连接。"""
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row      # 查询结果带列名，才能 dict(row) 成 JSON
+    return conn
+
+
+def init_db():
+    """启动时调用：确保库文件、表、索引都在。已存在就跳过。"""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        text TEXT,
+        score REAL,
+        label TEXT,
+        pinyin TEXT,
+        createdAt TEXT
+    )
+    """)
+    # createdAt 是每次查询都要 ORDER BY 的列，值得建索引
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_history_created ON history(createdAt)")
+    conn.commit()
+    conn.close()
 
 
 def save_record(record):
-    """追加一条记录：读全部 -> 内存里 append -> 整个写回。"""
-    records = load_history()
-    records.append(record)
-    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(records, f, ensure_ascii=False, indent=2)
+    """插入一条。值一律走 ? 占位，不拼字符串，从根上防注入。"""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO history (text, score, label, pinyin, createdAt) VALUES (?, ?, ?, ?, ?)",
+        [record["text"], record["score"], record["label"], record["pinyin"], record["createdAt"]],
+    )
+    conn.commit()
+    conn.close()
 
 
 def get_history(limit):
-    """取最近的 limit 条，新的排在前面。
+    """取最近 limit 条，新的在前。
 
-    这里只决定「怎么取」（倒序、切前 limit 条），
-    至于 limit 具体是 10 还是 20，由调用方说了算。
+    文件版里要做的三件事（全量读、自己倒序、自己切片），
+    现在一句 SQL 全包了，Python 这边不再碰排序逻辑。
     """
-    records = load_history()
-    records.reverse()
-    return records[:limit]
+    conn = get_conn()
+    cur = conn.cursor()
+    rows = cur.execute(
+        "SELECT * FROM history ORDER BY createdAt DESC LIMIT ?",
+        [limit],
+    ).fetchall()
+    conn.close()
+
+    records = []
+    for row in rows:
+        records.append(dict(row))
+    return records

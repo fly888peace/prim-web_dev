@@ -8,10 +8,12 @@ from snownlp import SnowNLP
 # 时间基准
 from datetime import datetime, timezone
 # 存储层：存哪儿、怎么存、怎么取都归 storage.py 管，这里只经过这一行
-from storage import save_record, get_history
+from storage import init_db, save_record, get_history
 
 
 app = FastAPI()
+
+init_db()   # 启动时确保库、表、索引都在；已经存在就跳过
 
 app.add_middleware(
     CORSMiddleware,
