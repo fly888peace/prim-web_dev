@@ -14,9 +14,9 @@
 - 后端：FastAPI ＋ uvicorn
 - 分析：snownlp（情感）、pypinyin（注音）
 - 存储：SQLite
-- 线上：Nginx（静态文件 ＋ `/api/` 反向代理）＋ systemd 托管后端
+- 线上：Nginx（静态文件 ＋ `/api/` 反向代理）＋ systemd 托管后端，HTTPS 由 certbot 签发
 
-**线上是同源部署**：浏览器只跟 80 端口打交道，`/api/` 由 Nginx 转发给只监听
+**线上是同源部署**：浏览器只跟 80 / 443 打交道，`/api/` 由 Nginx 转发给只监听
 `127.0.0.1` 的后端，8000 端口不对公网开放。
 
 ## 页面（文件夹 = 路由）
@@ -169,19 +169,64 @@ server {
 nginx -t && systemctl reload nginx
 ```
 
-**6. 安全组 / 防火墙**
+**6. 域名与 HTTPS**（首次部署才需要）
 
-只放行 **22（SSH）** 和 **80（HTTP）**。**8000 不要放行**——后端只听 `127.0.0.1`，
-由 Nginx 转发进去。少开一个口，少一分被扫的风险。
+1. 在域名控制台加两条 A 记录：主机记录分别填 `@` 和 `www`，记录值都填服务器 IP
+   （服务器在中国大陆的，要先完成 ICP 备案）。
 
-**7. 验证**
+2. 给网站单独建一份以域名命名的配置，`default` 只留作兜底：
+
+   ```bash
+   cp /etc/nginx/sites-available/default /etc/nginx/sites-available/example.com
+   vim /etc/nginx/sites-available/example.com
+   vim /etc/nginx/sites-available/default
+   ln -s /etc/nginx/sites-available/example.com /etc/nginx/sites-enabled/
+   nginx -t && systemctl reload nginx
+   ```
+
+   - `example.com`（换成你自己的域名）：两行 `listen` 去掉 `default_server`；
+     `server_name _;` 改成 `server_name example.com www.example.com;`；
+     再加一行 `access_log /var/log/nginx/example.com.access.log;`。
+     `root` 和 `location /api/` 两段原样保留。
+   - `default`：整个换成兜底块，让没匹配上域名的请求直接 404——
+
+     ```nginx
+     server {
+         listen 80 default_server;
+         listen [::]:80 default_server;
+         server_name _;
+         return 404;
+     }
+     ```
+
+3. 安装 certbot，签发证书（提示里两个域名都选上，直接回车即全选）：
+
+   ```bash
+   snap install --classic certbot
+   ln -s /snap/bin/certbot /usr/bin/certbot
+   certbot --nginx
+   certbot renew --dry-run      # 彩排一次续期，跑通就不用管了
+   ```
+
+   `certbot --nginx` 会自己改上面那份 nginx 配置：加 443 的 `listen`、写证书路径、
+   并把 80 的请求跳转到 443。签完再看一眼配置文件，确认 `location /api/` 那段还在。
+
+**7. 安全组 / 防火墙**
+
+只放行 **22（SSH）**、**80（HTTP）** 和 **443（HTTPS）**。**8000 不要放行**——后端只听
+`127.0.0.1`，由 Nginx 转发进去。少开一个口，少一分被扫的风险。
+
+**8. 验证**
 
 ```bash
 curl localhost/api/profile        # 服务器本机，注意不带端口
 ```
 
-返回 `{"heroTitle": ...}` 就说明 Nginx 到后端这条路通了。浏览器访问 `http://服务器IP`，
-做一次分析、看一眼历史记录；换个无痕窗口再试，两边的历史应该互相看不到。
+返回 `{"heroTitle": ...}` 就说明 Nginx 到后端这条路通了。
+
+浏览器访问 `https://example.com`，地址栏不再标「不安全」；再敲 `http://` 开头的地址，
+应该自动跳转到 `https://`。做一次分析、看一眼历史记录；换个无痕窗口再试，
+两边的历史应该互相看不到。
 
 ## 日常发布
 
@@ -204,6 +249,9 @@ journalctl -u PRIM-WEB_DEV.service -n 50 # 看最后 50 行
 
 nginx -t                                 # 改完 Nginx 配置先验语法
 systemctl reload nginx                   # 再让它重读
+
+certbot certificates                     # 看已签发的证书和到期时间
+certbot renew --dry-run                  # 续期彩排
 ```
 
 `Restart=always` 意味着进程崩了会自动拉起，所以「网站一会儿能用一会儿不能」这种
