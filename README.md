@@ -1,62 +1,200 @@
 # 游戏记录
 
-Next.js 15（App Router）的游玩记录站：截图 + 文字攻略。
+一个游玩记录站：把自己的截图和文字攻略整理成条目，按游戏名和日期归档。
 
-三个页面，全部在 build 时**预渲染成真实的 HTML 文件**——直接访问不 404、首屏不用等 JS、爬虫也能读到内容。
+除了首页列表和详情页，还有一个「关于」页，里面放着「试一试」卡片——把一段文字发给后端，
+拿回情感分数和全文拼音，结果按浏览器会话分别存起来，各人只看得到自己的那一份。
+
+零到全栈课程的贯穿项目。
+
+## 技术栈
+
+- 前端：Next.js 15（App Router，静态导出）＋ React 19
+- 动画：anime.js 4
+- 后端：FastAPI ＋ uvicorn
+- 分析：snownlp（情感）、pypinyin（注音）
+- 存储：SQLite
+- 线上：Nginx 发静态文件，后端跑在 8000
 
 ## 页面（文件夹 = 路由）
 
 | 文件 | 地址 |
-|---|---|
+| --- | --- |
 | `app/page.jsx` | `/` |
 | `app/about/page.jsx` | `/about` |
 | `app/post/[id]/page.jsx` | `/post/<id>`，比如 `/post/sample-01` |
 
-加页面不用注册路由，新建文件夹 + `page.jsx` 就行。加一篇记录也不用建文件，那是数据的事（见下）。
+加页面不用注册路由，新建文件夹 + `page.jsx` 就行；加一篇记录只改 `data/posts.js`，
+`generateStaticParams` 会把新 id 自动加进预渲染列表。
 
 ## 目录结构
 
 ```
 web_dev/
-├── app/
-│   ├── layout.jsx            全站外壳：<html>/<body> + 8 个 CSS + metadata
-│   ├── page.jsx              /
-│   ├── about/page.jsx        /about
-│   └── post/[id]/page.jsx    /post/<id>（generateStaticParams 决定预渲染哪几篇）
-├── components/
-│   ├── Nav.jsx               "use client"（Link + usePathname）
-│   ├── HomeView.jsx          "use client"（useState 筛选）
-│   ├── SearchCard.jsx        "use client"（受控输入）
-│   ├── AnimatedCardGrid.jsx  "use client"（anime.js 入场动画）
-│   ├── PostCard.jsx          服务端（Link）
-│   ├── PostView.jsx          服务端
-│   ├── AboutView.jsx         服务端
-│   ├── PageHeading.jsx       服务端
-│   ├── StatsCard.jsx         服务端
-│   └── PostBody.jsx          服务端
+├── app/                      路由：layout / page / about / post[id]
+├── components/               页面组件（含 "use client" 的交互组件）
 ├── data/
 │   ├── posts.js              ★ 所有记录的内容
 │   └── site.js               站点文案（品牌、导航、每页标题）
-├── css/                      8 个样式文件
+├── css/                      8 个样式文件，按区块拆
 ├── public/images/            截图放这里，引用写 /images/xxx.jpg
-└── next.config.mjs
+├── backend/                  FastAPI 服务（main.py / storage.py）
+├── out/                      构建产物，不进 Git
+├── next.config.mjs           output: "export"
+└── .env.example              环境变量模板
 ```
 
-### `"use client"` 怎么判断
+## 本地跑起来
 
-- 用到 `useState` / `useEffect` / `usePathname` / 点击事件 / 动画 → 顶上写 `"use client"`
-- 纯展示、只是把别的组件摆在一起 → 不写，默认是服务端组件，build 时直接渲染成 HTML
+需要：**Node.js 18.18+**（推荐 20+）、**Python 3.11+**。
 
-注意：写了 `"use client"` 不等于「不预渲染」。客户端组件同样会被预渲染成 HTML，只是额外再送一份 JS 到浏览器让它能交互。
+> Python 版本别用 3.10：`requirements.txt` 里的 `dnspython==2.9.2`、`starlette==1.10.0`
+> 都要求 `>=3.11`，在 3.10 上 pip 会直接报「找不到匹配的版本」。
 
-## 命令
+**后端**
 
 ```bash
-npm install     # 只需一次
-npm run dev     # 开发，http://localhost:3000（注意不是 5173）
-npm run build   # 构建
-npm start       # 用构建产物起服务，同样是 3000
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env          # 按下面「配置说明」填好
+fastapi dev                   # → http://localhost:8000，接口文档在 /docs
 ```
+
+**前端**（另开一个终端）
+
+```bash
+npm install
+cp .env.example .env.local    # 按下面「配置说明」填好
+npm run dev                   # → http://localhost:3000
+```
+
+两个进程都要开着：前端只发静态页面，数据全靠后端。
+
+## 部署到服务器
+
+前提：服务器上已装好 Python 3.11+、Node.js 18.18+ 和 Nginx，
+且 Nginx 的站点根目录已指向本项目的 `out/`、监听 80 端口。
+
+**1. 拉取代码**
+
+```bash
+cd ~/prim-web_dev
+git pull
+```
+
+**2. 前端：装依赖、写配置、构建**
+
+```bash
+npm install
+cp .env.example .env.production   # 按下面「配置说明」填好
+npm run build                     # 产物进 out/，由 Nginx 提供服务
+```
+
+**3. 后端：建环境、装依赖、写配置**
+
+```bash
+cd backend
+python3 -m venv .venv             # 首次部署才需要
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env              # 按下面「配置说明」填好
+```
+
+**4. 后端：在后台跑起来**
+
+```bash
+cd /home/prim-web_dev/backend
+nohup .venv/bin/fastapi run >> backend.log 2>&1 &
+```
+
+`fastapi run` 是生产模式，监听 `0.0.0.0:8000`；`nohup ... &` 让它在 SSH 断开后继续运行，
+日志写进 `backend.log`。
+
+查看日志、停止服务：
+
+```bash
+tail -f backend.log           # 看日志
+ps aux | grep fastapi         # 找到进程号
+kill 进程号                    # 停掉
+```
+
+> 这一步一定要在 `backend/` 目录里执行。`main.py` 用 `load_dotenv()` 读 `.env`，
+> 而它按**当前工作目录**找文件——在别的目录启动，`.env` 读不到，进程会直接起不来。
+
+**5. 放行 8000 端口**
+
+去云平台控制台的安全组 / 防火墙，放行 8000 端口（80 端口应该已经放行）。
+
+加完规则后**确认这个安全组确实关联了当前实例**——只加规则、实例挂在别的安全组上，
+端口照样不通，而且表现是「超时」而不是「连接被拒」，很容易误判。
+
+验证方法（在服务器上执行）：
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" --max-time 5 http://服务器IP:8000/api/profile
+```
+
+返回 `200` 才算真正打通。
+
+**6. 验证**
+
+浏览器访问 `http://服务器IP`，打开「关于」页做一次分析，再看历史记录。
+换一个浏览器（或无痕窗口）再试一次，两边的历史记录应该是互相看不到的。
+
+Nginx 站点配置（静态导出，注意 `$uri.html`）：
+
+```nginx
+server {
+    listen 80;
+    server_name 你的域名或IP;
+
+    root /home/prim-web_dev/out;
+    index index.html;
+
+    location / {
+        try_files $uri $uri.html $uri/ =404;
+    }
+}
+```
+
+## 配置说明
+
+配置文件不进 Git，请照着 `.env.example` 自己建一份。
+
+**前端**：开发用 `.env.local`，生产构建用 `.env.production`
+
+| 键 | 说明 | 本地 | 线上 |
+| --- | --- | --- | --- |
+| `NEXT_PUBLIC_API_BASE_URL` | 后端接口地址 | `http://localhost:8000` | `http://服务器IP:8000` |
+
+**后端**：`backend/.env`
+
+| 键 | 说明 | 本地 | 线上 |
+| --- | --- | --- | --- |
+| `ALLOWED_ORIGINS` | 允许跨源访问的前端地址，多个用逗号隔开 | `http://localhost:3000` | `http://服务器IP`（不带端口、不带结尾斜杠） |
+
+三个容易踩的点：
+
+1. `NEXT_PUBLIC_` 前缀的值会**被打包进浏览器代码**，且是**构建时写死的**。改了必须重新
+   `npm run build`，只重启服务没用；也只能放公开地址，不能放密钥。
+2. `ALLOWED_ORIGINS` 必须和浏览器地址**逐字一致**。`http://1.2.3.4` 和 `http://1.2.3.4/`
+   在 CORS 眼里是两个源；后端改完 `.env` 要**重启进程**才生效（`--reload` 只监听 `.py`）。
+3. 后端开了 `allow_credentials=True`，所以前端 fetch 必须带 `credentials: "include"`，
+   否则 `session_id` 这个 cookie 不会跟着走，历史记录永远是空的。
+
+## 接口
+
+| 接口 | 用在哪 |
+| --- | --- |
+| `GET /api/profile` | 首页标题、副标题（拿不到就用 `data/site.js` 打底） |
+| `POST /api/analyze` | 「试一试」卡：返回情感分数、判断和全文拼音，并记一条历史 |
+| `GET /api/history?limit=10` | 历史记录弹窗，只回当前会话自己的那几条 |
+
+`POST /api/analyze` 带 `Content-Type: application/json`，属于「非简单请求」，
+浏览器会先自动发一条 `OPTIONS` 预检，通过后才发真正的 POST。这条 OPTIONS 不是你写的代码，
+`curl` 里看不到，但 DevTools 的 Network 面板能看到两条。
 
 ## 加一条记录
 
@@ -84,112 +222,27 @@ npm start       # 用构建产物起服务，同样是 3000
 }
 ```
 
-`generateStaticParams` 会自动把新 id 加入预渲染列表，`/post/eldenring-01` 直接可访问。截图丢进 `public/images/`。
+截图丢进 `public/images/`。改站点文字在 `data/site.js`。
 
-改站点文字在 `data/site.js`。
+## 常见问题
 
-## 部署
+**点「发给后端」报 `Failed to fetch`**
 
-和 Vite 那版不同：**Nginx 不能直接指向源码或某个静态目录了**，Next 有自己的服务器。
+先分三步看：
 
-### 方案 A：Node 常驻 + Nginx 反代（推荐）
+1. `curl http://服务器IP:8000/api/profile` 通不通 → 不通是端口/安全组问题；
+2. DevTools Network 里那条 `OPTIONS` 返回什么 → `502` 说明前面有代理连不上后端；
+3. 返回 `200` 但没有 `access-control-allow-origin` → `ALLOWED_ORIGINS` 写错或没重启。
 
-```bash
-# 服务器上，先装 Node（nvm 或 apt 都行）
-cd ~/web_dev && git pull && npm install && npm run build
-npm start            # 监听 3000，可以配合 pm2 / systemd 常驻
-```
+**后端一会儿能连、一会儿 502**
 
-Nginx 只做转发：
+多半是前台跑的 `fastapi run` 被 SSH 断开带走了。用 `nohup ... &` 或者 systemd 托管，
+进程才不会随终端退出。
 
-```nginx
-server {
-    listen 80;
-    server_name 你的域名或IP;
+**页面能开，但图片/样式 404**
 
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-```
-
-### 方案 B：静态导出，仍交给 Nginx
-
-`next.config.mjs` 加一行 `output: "export"`，然后 `npm run build`，产物在 `out/`，可以像 Vite 的 `dist/` 一样丢给 Nginx：
-
-```nginx
-root /var/www/web_dev/out;
-location / {
-    try_files $uri $uri/ $uri.html /index.html;
-}
-```
-
-代价：所有页面在 build 时就定死了，以后要加「每次请求都不同」的动态内容就没法办。当前这个站全是静态内容，方案 B 完全够用。
-
-## 前后端联调
-
-前端（3000）和后端（8000）是两个独立进程，各开一个终端。
-
-### 后端
-
-```powershell
-cd backend
-.\.venv\Scripts\Activate.ps1
-uvicorn main:app --reload --port 8000
-```
-
-`--reload` 让改完 Python 自动重启，省得每次按 Ctrl+C。启动后打开 http://localhost:8000/docs 是 FastAPI 自动生成的接口文档。
-
-### 前端
-
-```powershell
-npm run dev      # http://localhost:3000
-```
-
-### 两个接口
-
-| 接口 | 用在哪 |
-|---|---|
-| `GET /api/profile` | 首页标题、副标题（拿不到就用 `data/site.js` 打底） |
-| `POST /api/analyze` | 关于页的「试一试」卡，返回分数和判断 |
-
-### 环境变量
-
-```bash
-# .env.local
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
-```
-
-组件里读 `process.env.NEXT_PUBLIC_API_BASE_URL`。改完必须**重启** `npm run dev` 才生效，因为环境变量是启动时读的。
-
-`NEXT_PUBLIC_` 前缀意味着这个值会**被打包进浏览器代码**，只能放公开地址，不能放密钥。
-
-### CORS 是一对，别只改一半
-
-`backend/main.py` 里：
-
-```python
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],   # ← 前端的地址
-    allow_methods=["GET", "POST"],
-)
-```
-
-这个 `allow_origins` 必须和前端实际访问地址一致。换端口、换域名、部署上线，两边要同时改，否则浏览器报 CORS 错误。
-
-### 为什么点一次按钮会出现两条请求
-
-`POST /api/analyze` 带了 `Content-Type: application/json`，属于「非简单请求」，浏览器会先自动发一条 `OPTIONS` 预检，通过后才发真正的 POST。这条 OPTIONS 不是你写的代码，是浏览器发的，`curl` 里永远看不到。
-
-### 静态导出的注意点
-
-`next.config.mjs` 里用了 `output: "export"`，前端产物是一堆死文件，没有服务端。所以：
-
-- 所有 fetch 必须写在 `"use client"` 组件里
-- 后端地址在 **build 那一刻**就被写进 JS 了，改 `.env.local` 后必须重新 `npm run build`，光重启服务没用
+`out/` 目录不是同一版构建的产物，或者 Nginx 的 `root` 指错了位置。重新 `npm run build`
+并把整个 `out/` 传上去。
 
 ## 和上一版（Vite + React）的差别
 
