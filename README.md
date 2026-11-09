@@ -177,16 +177,16 @@ nginx -t && systemctl reload nginx
 2. 给网站单独建一份以域名命名的配置，`default` 只留作兜底：
 
    ```bash
-   cp /etc/nginx/sites-available/default /etc/nginx/sites-available/example.com
-   vim /etc/nginx/sites-available/example.com
+   cp /etc/nginx/sites-available/default /etc/nginx/sites-available/superflyai.xyz
+   vim /etc/nginx/sites-available/superflyai.xyz
    vim /etc/nginx/sites-available/default
-   ln -s /etc/nginx/sites-available/example.com /etc/nginx/sites-enabled/
+   ln -s /etc/nginx/sites-available/superflyai.xyz /etc/nginx/sites-enabled/
    nginx -t && systemctl reload nginx
    ```
 
-   - `example.com`（换成你自己的域名）：两行 `listen` 去掉 `default_server`；
-     `server_name _;` 改成 `server_name example.com www.example.com;`；
-     再加一行 `access_log /var/log/nginx/example.com.access.log;`。
+   - `superflyai.xyz`（换成你自己的域名）：两行 `listen` 去掉 `default_server`；
+     `server_name _;` 改成 `server_name superflyai.xyz www.superflyai.xyz;`；
+     再加一行 `access_log /var/log/nginx/superflyai.xyz.access.log;`。
      `root` 和 `location /api/` 两段原样保留。
    - `default`：整个换成兜底块，让没匹配上域名的请求直接 404——
 
@@ -224,7 +224,7 @@ curl localhost/api/profile        # 服务器本机，注意不带端口
 
 返回 `{"heroTitle": ...}` 就说明 Nginx 到后端这条路通了。
 
-浏览器访问 `https://example.com`，地址栏不再标「不安全」；再敲 `http://` 开头的地址，
+浏览器访问 `https://superflyai.xyz`，地址栏不再标「不安全」；再敲 `http://` 开头的地址，
 应该自动跳转到 `https://`。做一次分析、看一眼历史记录；换个无痕窗口再试，
 两边的历史应该互相看不到。
 
@@ -271,9 +271,9 @@ certbot renew --dry-run                  # 续期彩排
 
 | 键 | 说明 | 本地 | 线上 |
 | --- | --- | --- | --- |
-| `ALLOWED_ORIGINS` | 允许跨源访问的前端地址，多个用逗号隔开 | `http://localhost:3000` | `http://服务器IP`（不带端口、不带结尾斜杠） |
+| `ALLOWED_ORIGINS` | 允许跨源访问的前端地址，多个用逗号隔开 | `http://localhost:3000` | `https://superflyai.xyz`（线上同源后其实用不上，填真实地址只是占位） |
 
-四个容易踩的点：
+五个容易踩的点：
 
 1. `NEXT_PUBLIC_` 前缀的值会**被打包进浏览器代码**，且是**构建时写死的**。改了必须重新
    `npm run build`，只重启服务没用；也只能放公开地址，不能放密钥。
@@ -285,6 +285,10 @@ certbot renew --dry-run                  # 续期彩排
    本地开发 3000 → 8000 也仍然需要它。
 4. 后端改了 `.env` 要 `systemctl restart PRIM-WEB_DEV.service` 才生效
    （`--reload` 只监听 `.py` 文件，不监听 `.env`）。
+5. `session_id` 这个 cookie 带 `secure=True`（见 `main.py`），**只有 https 页面才会被浏览器保存**。
+   线上走 `https://superflyai.xyz` 没问题，本地 `http://localhost:3000` 也能用（浏览器把
+   localhost 当作安全上下文）；但如果改成用 `http://服务器IP` 访问，cookie 会被直接丢弃，
+   表现就是历史记录永远为空，而且后端日志里看不出任何异常。
 
 ## 接口
 
@@ -344,6 +348,9 @@ tail -20 /var/log/nginx/error.log          # Nginx 侧有没有报错
 
 `fetch` 少了 `credentials: "include"`，`session_id` 这个 cookie 没跟着走，
 后端每次都当你是新人。或者前端和后端不是同一个主机（cookie 不会跨站共享）。
+
+还有一种：cookie 是 `secure=True` 的，却用 `http://` 访问，浏览器会直接把它丢掉——
+DevTools → Application → Cookies 里根本看不到 `session_id`，那就是这个原因。
 
 **页面能开，但图片/样式 404**
 
