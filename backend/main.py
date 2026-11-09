@@ -45,6 +45,7 @@ def get_session_id(request: Request, response: Response) -> str:
             sid,
             httponly=True,                      # 页面上的 JS 读不到它
             samesite="lax",                     # 跨站请求不会自动带
+            secure=True,                          # ← 新增：只在 HTTPS 上运送
             max_age=60 * 60 * 24 * 30,          # 30 天，单位是秒
         )
     return sid
