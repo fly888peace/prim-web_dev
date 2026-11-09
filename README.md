@@ -266,6 +266,7 @@ certbot renew --dry-run                  # 续期彩排
 | 键 | 说明 | 本地 | 线上 |
 | --- | --- | --- | --- |
 | `NEXT_PUBLIC_API_BASE_URL` | 后端接口地址 | `http://localhost:8000` | **留空**——前后端同源，代码里走相对路径 |
+| `NEXT_PUBLIC_GA_ID` | Google Analytics 4 的测量 ID | 可不填（本地不上报） | `G-你的真实ID` |
 
 **后端**：`backend/.env`
 
@@ -273,7 +274,7 @@ certbot renew --dry-run                  # 续期彩排
 | --- | --- | --- | --- |
 | `ALLOWED_ORIGINS` | 允许跨源访问的前端地址，多个用逗号隔开 | `http://localhost:3000` | `https://superflyai.xyz`（线上同源后其实用不上，填真实地址只是占位） |
 
-五个容易踩的点：
+六个容易踩的点：
 
 1. `NEXT_PUBLIC_` 前缀的值会**被打包进浏览器代码**，且是**构建时写死的**。改了必须重新
    `npm run build`，只重启服务没用；也只能放公开地址，不能放密钥。
@@ -289,6 +290,11 @@ certbot renew --dry-run                  # 续期彩排
    线上走 `https://superflyai.xyz` 没问题，本地 `http://localhost:3000` 也能用（浏览器把
    localhost 当作安全上下文）；但如果改成用 `http://服务器IP` 访问，cookie 会被直接丢弃，
    表现就是历史记录永远为空，而且后端日志里看不出任何异常。
+6. GA 是 `components/GoogleAnalytics.jsx` 里用 `next/script`（`afterInteractive`）加载的，
+   由 `app/layout.jsx` 统一渲染，所以全站页面都带。**占位符 `G-XXXXXXXXXX` 不会上报数据**，
+   换成真实 ID 后同样要重新 `npm run build`。想看它有没有生效，别翻网页源码
+   （源码里只有序列化的配置），去 DevTools → Elements 看 `<head>` 里那两条 `<script>`，
+   或 Network 里筛 `gtag`。
 
 ## 接口
 

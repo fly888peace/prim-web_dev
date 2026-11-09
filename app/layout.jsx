@@ -15,6 +15,9 @@ import "../css/cards.css";
 import "../css/post.css";
 import "../css/responsive.css";
 
+// 全站统计：放在 layout 里，所有页面自动带上，不用每页各引一次
+import GoogleAnalytics from "../components/GoogleAnalytics.jsx";
+
 // 站点标题和描述：写在这里，所有页面共享；Next 会把它塞进每页的 <head>
 export const metadata = {
   title: "游戏记录 · 截图与攻略",
@@ -28,6 +31,7 @@ export default function RootLayout({ children }) {
         <div className="app-shell">
           <div className="page-shell">{children}</div>
         </div>
+        <GoogleAnalytics />
       </body>
     </html>
   );
